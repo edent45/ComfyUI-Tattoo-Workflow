@@ -76,7 +76,14 @@ Throughout the project, I experimented with different:
     <td><img src="Output_Images/using_lora_less_noise.png" width="200"/></td>
     <td><img src="Output_Images/using_2_lora_models.png" width="200"/></td>
     <td><img src="Output_Images/using_lora4.png" width="200"/></td>
-    <td><img src="Output_Images/ComfyUI_temp_fsevu_00008_.png" width="200"/></td>
+  </tr>
+</table>
+
+<table>
+    <tr>
+        <td><img src="Output_Images/ComfyUI_temp_fsevu_00008_.png" width="200"/></td>
+        <td><img src="Output_Images/ComfyUI_temp_fsevu_00018_.png" width="200"/></td>
+        <td><img src="Output_Images/ComfyUI_temp_fsevu_00003_.png" width="200"/></td>
   </tr>
 </table>
 
