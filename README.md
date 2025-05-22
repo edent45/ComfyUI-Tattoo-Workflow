@@ -11,6 +11,7 @@ The goal of this project is to create a ComfyUI workflow that generate a tattoo 
 
 ## Methods
 1. ** Input image prepartions**
+    
     - Input: image of a person 
     - Manually select a masked area where the tattoo will be applied.
         <td><img src="images_readme/mask_example.png" width="200"/></td>
@@ -19,18 +20,33 @@ The goal of this project is to create a ComfyUI workflow that generate a tattoo 
         
         This image with the mask will be the one used. The crop ensures better resolution and detail since model output strongly depends on input resolution.
     - upscale the images - to match model input requirements and ensure better generation quality.
+
+    <td><img src="images_readme/image_pre.png" width="400"/></td>
+
 2. ** Models used **
     - Base: Juggernaut-X-RunDiffusion-NSFW
     - Loras : sleeve_tattoo_v3.safetensors, SGShkurushka_198800,Tattoos
     
     Using different loras add images of tattoos to the model and can change the style that is generated, for example one lora wont generate word tattoos while another will:
     <td><img src="Output_Images/Final3.png" width="200"/></td>
+
 3. ** Generating tattoo **
+
     - Prompts - positive + negative
     - Lora that are trained on tattoo help achive different styles
     - Control net , depthanything preprocessor help guide the placement of the tattoo and blend it onto the body and match the skin.
-    <td><img src="images_readme/controlnet_example.png" width="200"/></td>
+        <td><img src="images_readme/controlnet_example.png" width="200"/></td>
     - Using mask inpainting is used to generate the tattoo on the selected area.
+
+    
+    <table>
+    <tr>
+        <td><img src="images_readme/controlnet.png" width="400"/></td>
+        <td><img src="images_readme/generate_tattoo.png" width="400"/></td>
+        <td><img src="images_readme/stich_to_image.png" width="400"/></td>
+    </tr>
+    </table>
+    
 
 ## Summary
 This workflow uses a **crop-and-stitch inpainting strategy** to generate detailed and realistic tattoos:
