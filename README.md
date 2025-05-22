@@ -70,10 +70,13 @@ Throughout the project, I experimented with different:
 
 <table>
   <tr>
+    <td><img src="Output_Images/ComfyUI_temp_ricqs_00004_.png" width="200"/></td>
+    <td><img src="Output_Images/ComfyUI_temp_ricqs_00022_.png" width="200"/></td>
     <td><img src="Output_Images/popular_tattoo2.png" width="200"/></td>
     <td><img src="Output_Images/using_lora_less_noise.png" width="200"/></td>
     <td><img src="Output_Images/using_2_lora_models.png" width="200"/></td>
     <td><img src="Output_Images/using_lora4.png" width="200"/></td>
+    <td><img src="Output_Images/ComfyUI_temp_fsevu_00008_.png" width="200"/></td>
   </tr>
 </table>
 
