@@ -66,7 +66,7 @@ Throughout the project, I experimented with different:
 
 <table>
   <tr>
-    <td><img src="Input_images/17.jpg" width="200"/></td>
+    <td><img src="Input_Images/17.jpg" width="200"/></td>
     <td><img src="Output_Images/Final1.png" width="200"/></td>
   </tr>
 </table>
@@ -74,7 +74,7 @@ Throughout the project, I experimented with different:
 
 <table>
   <tr>
-    <td><img src="Input_images/12.jpg" width="200"/></td>
+    <td><img src="Input_Images/12.jpg" width="200"/></td>
     <td><img src="Output_Images/Final2.png" width="200"/></td>
   </tr>
 </table>
@@ -82,7 +82,7 @@ Throughout the project, I experimented with different:
 
 <table>
   <tr>
-    <td><img src="Input_images/2.jpg" width="200"/></td>
+    <td><img src="Input_Images/2.jpg" width="200"/></td>
     <td><img src="Output_Images/Final3.png" width="200"/></td>
   </tr>
 </table>
@@ -90,7 +90,7 @@ Throughout the project, I experimented with different:
 
 <table>
   <tr>
-    <td><img src="Input_images/15.jpg" width="200"/></td>
+    <td><img src="Input_Images/15.jpg" width="200"/></td>
     <td><img src="Output_Images/Final4.png" width="200"/></td>
   </tr>
 </table>
