@@ -10,7 +10,7 @@ The goal of this project is to create a ComfyUI workflow that generate a tattoo 
 - tattoo_crop is the latest version 
 
 ## Methods
-1. ** Input image prepartions**
+1. ** Input image preparations**
     
     - Input: image of a person 
     - Manually select a masked area where the tattoo will be applied.
