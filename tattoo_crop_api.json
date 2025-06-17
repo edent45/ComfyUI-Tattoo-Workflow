@@ -1,0 +1,460 @@
+{
+  "1": {
+    "inputs": {
+      "image": "clipspace/clipspace-mask-2958331.800000012.png [input]"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "ckpt_name": "Juggernaut-X-RunDiffusion-NSFW.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "3": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 512,
+      "crop": "disabled",
+      "samples": [
+        "51",
+        3
+      ]
+    },
+    "class_type": "LatentUpscale",
+    "_meta": {
+      "title": "Upscale Latent"
+    }
+  },
+  "4": {
+    "inputs": {
+      "padding": 64,
+      "image": [
+        "1",
+        0
+      ],
+      "mask": [
+        "1",
+        1
+      ]
+    },
+    "class_type": "CropByMask",
+    "_meta": {
+      "title": "Crop By Mask"
+    }
+  },
+  "5": {
+    "inputs": {
+      "control_net_name": "diffusion_pytorch_model.fp16.safetensors"
+    },
+    "class_type": "ControlNetLoader",
+    "_meta": {
+      "title": "Load ControlNet Model"
+    }
+  },
+  "6": {
+    "inputs": {
+      "strength": 0.5200000000000001,
+      "start_percent": 0,
+      "end_percent": 1,
+      "positive": [
+        "7",
+        0
+      ],
+      "negative": [
+        "8",
+        0
+      ],
+      "control_net": [
+        "5",
+        0
+      ],
+      "image": [
+        "11",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "ControlNetApplyAdvanced",
+    "_meta": {
+      "title": "Apply ControlNet"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "flower tattoo",
+      "clip": [
+        "53",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "text": "low quality, blurry, distorted, extra limbs, bad anatomy, text, watermark, poorly drawn, cropped, unfinished, duplicate, different skin tone ",
+      "clip": [
+        "53",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "preprocessor": "DepthAnythingV2Preprocessor",
+      "resolution": 512,
+      "image": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "AIO_Preprocessor",
+    "_meta": {
+      "title": "AIO Aux Preprocessor"
+    }
+  },
+  "12": {
+    "inputs": {
+      "images": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "13": {
+    "inputs": {
+      "grow_mask_by": 6,
+      "pixels": [
+        "52",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ],
+      "mask": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "VAEEncodeForInpaint",
+    "_meta": {
+      "title": "VAE Encode (for Inpainting)"
+    }
+  },
+  "14": {
+    "inputs": {
+      "amount": 20,
+      "device": "auto",
+      "mask": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "MaskBlur+",
+    "_meta": {
+      "title": "🔧 Mask Blur"
+    }
+  },
+  "15": {
+    "inputs": {
+      "images": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "16": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "17": {
+    "inputs": {
+      "vae_name": "sdxl.vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "18": {
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "19": {
+    "inputs": {
+      "samples": [
+        "13",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "20": {
+    "inputs": {
+      "images": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "51": {
+    "inputs": {
+      "seed": 44160080562757,
+      "steps": 70,
+      "cfg": 6.5,
+      "sampler_name": "dpmpp_2s_ancestral_cfg_pp",
+      "scheduler": "karras",
+      "denoise": 0.6400000000000001,
+      "preview_method": "auto",
+      "vae_decode": "true",
+      "model": [
+        "53",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "6",
+        1
+      ],
+      "latent_image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "KSampler (Efficient)",
+    "_meta": {
+      "title": "KSampler (Efficient)"
+    }
+  },
+  "52": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "width": 512,
+      "height": 512,
+      "crop": "disabled",
+      "image": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "Upscale Image"
+    }
+  },
+  "53": {
+    "inputs": {
+      "lora_name": "tattoo\\sleeve_tattoo_v3.safetensors.safetensors",
+      "strength_model": 0.7000000000000002,
+      "strength_clip": 0.8500000000000002,
+      "model": [
+        "2",
+        0
+      ],
+      "clip": [
+        "2",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "55": {
+    "inputs": {
+      "model": [
+        "2",
+        0
+      ],
+      "clip": [
+        "2",
+        1
+      ],
+      "lora_stack": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "CR Apply LoRA Stack JK",
+    "_meta": {
+      "title": "Apply LoRA Stack JK🐉"
+    }
+  },
+  "56": {
+    "inputs": {
+      "input_mode": "simple",
+      "lora_count": 3,
+      "lora_1": false,
+      "lora_name_1": "SDXL-Lightning\\sdxl_lightning_4step_lora.safetensors",
+      "lora_weight_1": 0.6100000000000001,
+      "model_weight_1": 0.45000000000000007,
+      "clip_weight_1": 0.6300000000000001,
+      "lora_2": true,
+      "lora_name_2": "tattoo\\sleeve_tattoo_v3.safetensors.safetensors",
+      "lora_weight_2": 0.7400000000000001,
+      "model_weight_2": 0.7100000000000002,
+      "clip_weight_2": 0.6200000000000001,
+      "lora_3": true,
+      "lora_name_3": "tattoo_lora01.safetensors",
+      "lora_weight_3": 0.6600000000000001,
+      "model_weight_3": 0.5900000000000001,
+      "clip_weight_3": 0.6600000000000001,
+      "lora_4": false,
+      "lora_name_4": "None",
+      "lora_weight_4": 1,
+      "model_weight_4": 1,
+      "clip_weight_4": 1,
+      "lora_5": false,
+      "lora_name_5": "None",
+      "lora_weight_5": 1,
+      "model_weight_5": 1,
+      "clip_weight_5": 1,
+      "lora_6": false,
+      "lora_name_6": "None",
+      "lora_weight_6": 1,
+      "model_weight_6": 1,
+      "clip_weight_6": 1,
+      "save_hash": false
+    },
+    "class_type": "CR LoRA Stack JK",
+    "_meta": {
+      "title": "LoRA Stack JK🐉"
+    }
+  },
+  "70": {
+    "inputs": {
+      "images": [
+        "71",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "71": {
+    "inputs": {
+      "resize_method": "nearest-exact",
+      "cropped_image": [
+        "16",
+        0
+      ],
+      "original_image": [
+        "1",
+        0
+      ],
+      "crop_x": [
+        "4",
+        2
+      ],
+      "crop_y": [
+        "4",
+        3
+      ],
+      "cropped_original_width": [
+        "4",
+        4
+      ],
+      "cropped_original_height": [
+        "4",
+        5
+      ]
+    },
+    "class_type": "ImageCropMerge",
+    "_meta": {
+      "title": "Image Crop Merge"
+    }
+  },
+  "72": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_xzddg_00005_.png&type=temp&subfolder=&rand=0.5019677835308316"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_xzddg_00006_.png&type=temp&subfolder=&rand=0.6622985023266514"
+          }
+        ]
+      },
+      "image_a": [
+        "1",
+        0
+      ],
+      "image_b": [
+        "71",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "Image Comparer (rgthree)"
+    }
+  }
+}
