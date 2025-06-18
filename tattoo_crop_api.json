@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "image": "clipspace/clipspace-mask-2958331.800000012.png [input]"
+      "image": "clipspace/clipspace-mask-7231666.8000000715.png [input]"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -61,7 +61,7 @@
   },
   "6": {
     "inputs": {
-      "strength": 0.5200000000000001,
+      "strength": 0.6600000000000001,
       "start_percent": 0,
       "end_percent": 1,
       "positive": [
@@ -92,7 +92,7 @@
   },
   "7": {
     "inputs": {
-      "text": "flower tattoo",
+      "text": "A delicate and detailed flower tattoo featuring a mix of realistic roses, peonies, and lilies, arranged in a flowing composition along the arm. The design should include fine linework, subtle shading, and botanical elements like leaves, small buds, and vines. The style should be elegant and slightly ornamental, with a black and grey color palette (no color fill), giving it a timeless and classic look. Placement is forearm or upper arm. Optional: Add a soft watercolor background or geometric elements like thin mandala patterns to enhance the aesthetic",
       "clip": [
         "53",
         1
@@ -256,14 +256,14 @@
   },
   "51": {
     "inputs": {
-      "seed": 44160080562757,
+      "seed": 44160080562371,
       "steps": 70,
       "cfg": 6.5,
       "sampler_name": "dpmpp_2s_ancestral_cfg_pp",
       "scheduler": "karras",
-      "denoise": 0.6400000000000001,
+      "denoise": 0.6300000000000001,
       "preview_method": "auto",
-      "vae_decode": "true",
+      "vae_decode": "false",
       "model": [
         "53",
         0
@@ -304,9 +304,9 @@
   },
   "53": {
     "inputs": {
-      "lora_name": "tattoo\\sleeve_tattoo_v3.safetensors.safetensors",
-      "strength_model": 0.7000000000000002,
-      "strength_clip": 0.8500000000000002,
+      "lora_name": "sdxl tattoo\\real-02.safetensors",
+      "strength_model": 0.5100000000000001,
+      "strength_clip": 0.7300000000000001,
       "model": [
         "2",
         0
@@ -434,12 +434,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_xzddg_00005_.png&type=temp&subfolder=&rand=0.5019677835308316"
+            "url": "/api/view?filename=rgthree.compare._temp_pqjpo_00011_.png&type=temp&subfolder=&rand=0.8473401023691323"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_xzddg_00006_.png&type=temp&subfolder=&rand=0.6622985023266514"
+            "url": "/api/view?filename=rgthree.compare._temp_pqjpo_00012_.png&type=temp&subfolder=&rand=0.22543033488724928"
           }
         ]
       },
