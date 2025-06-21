@@ -20,7 +20,7 @@ clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 COMFY_API = "http://127.0.0.1:8188"
 WORKFLOW_PATH = "./tattoo_crop_api.json"
 OUTPUT_DIR = "./Results"
-PROMPT_TEXT = ""
+PROMPT_TEXT = "flower tattoo"
 N_RUNS = 3
 BACKGROUND_COLOR = "#B6B6E4"  # Soft pastel background
 
