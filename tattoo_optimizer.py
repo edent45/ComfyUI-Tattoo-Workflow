@@ -23,17 +23,18 @@ WORKFLOW_PATH = "./tattoo_crop_api.json"
 OUTPUT_DIR = "./output_images"
 LORA_DIR = r"C:\Users\Admin\Documents\ComfyUI\models\loras"  # Directory with tattoo LoRAs
 BASE_PROMPT = "flower tattoo"  # Default base prompt
+MASK_DIR = "./masks"  # Directory to save masks
 
 #------DEFAULT PARAMETERS------
 DEFAULT_PARAMS = {
-    "lora1": "tattoo/sleeve_tattoo_v3.safetensors",
-    "lora1_model_weight": 0.7,
-    "lora1_clip_weight": 0.85,
+    "lora1": "sdxl tattoo\\real-02.safetensors",
+    "lora1_model_weight": 0.5,
+    "lora1_clip_weight": 0.7,
     "sampler": "dpmpp_2s_ancestral_cfg_pp",
     "scheduler": "karras",
     "steps": 70,
     "cfg": 6.5,
-    "denoise": 0.64
+    "denoise": 0.65
 }
 
 #------CLIP INIT------
@@ -61,30 +62,60 @@ class WorkflowOptimizer:
         self.best_image = None
         self.history = []
         
-    def get_available_loras(self):
+    def get_available_loras(self, model = "sdxl"):
         """Get available LoRA models in the directory."""
         if not os.path.exists(LORA_DIR):
             print(f"Warning: LoRA directory {LORA_DIR} not found. Using defaults.")
-            return ["tattoo/sleeve_tattoo_v3.safetensors", "tattoo_lora01.safetensors"]
-            
+            return ["sdxl tattoo/real-02.safetensors", "sdxl tattoo/SDXL-tattoo-Lora.safetensors"]
+        
+        if model == "sdxl":
+            lora_dir = os.path.join(LORA_DIR, "sdxl tattoo")   
+        elif model == "sd":
+            lora_dir = os.path.join(LORA_DIR, "tattoo sd 1.5") 
+        
         loras = []
-        for file in os.listdir(LORA_DIR):
+        
+        for file in os.listdir(lora_dir):
             if file.endswith(".safetensors"):
-                loras.append(os.path.join("tattoo", file))
+                loras.append(os.path.join(lora_dir, file))
         if not loras:
-            return ["tattoo/sleeve_tattoo_v3.safetensors", "tattoo_lora01.safetensors"]
+            return ["sdxl tattoo/real-02.safetensors", "sdxl tattoo/SDXL-tattoo-Lora.safetensors"]
         return loras
     
     def load_workflow(self):
         """Load the workflow JSON."""
-        with open(WORKFLOW_PATH, "r" , encoding='utf-8') as f:
+        with open(WORKFLOW_PATH, "r", encoding='utf-8') as f:
             return json.load(f)
     
-    def update_workflow_params(self, workflow, params, input_image_path, prompt):
+    def update_workflow_params(self, workflow, params, input_image_path, prompt, mask_path):
         """Update workflow with optimization parameters."""
         # Set input image
         if "1" in workflow and "inputs" in workflow["1"] and "image" in workflow["1"]["inputs"]:
             workflow["1"]["inputs"]["image"] = input_image_path
+        
+        # set mask
+        if mask_path and os.path.exists(mask_path):
+            print(f"Using mask: {mask_path}")
+            
+            # Add LoadMaskImage node to workflow
+            workflow["80"] = {
+                "inputs": {
+                    "image_path": mask_path,  # Use image_path as defined in your INPUT_TYPES
+                    "invert": False,
+                    "threshold": 127.0
+                },
+                "class_type": "LoadMaskImage"  # Use your custom node
+            }
+            
+            
+            # Connect the mask to the CropByMask node
+            if "4" in workflow and "inputs" in workflow["4"]:
+                if "mask" not in workflow["4"]["inputs"]:
+                    workflow["4"]["inputs"]["mask"] = [
+                        "80",  # The mask loader node
+                        0     # The first output is the image
+                    ]
+            
         
         # Set prompt
         if "7" in workflow and "inputs" in workflow["7"] and "text" in workflow["7"]["inputs"]:
@@ -104,9 +135,17 @@ class WorkflowOptimizer:
         if "53" in workflow and params.get("lora1"):
             lora_loader = workflow["53"]["inputs"]
             lora_loader["lora_name"] = params["lora1"]
-            lora_loader["strength_model"] = params.get("lora1_model_weight", 0.7)
-            lora_loader["strength_clip"] = params.get("lora1_clip_weight", 0.85)
+            lora_loader["strength_model"] = params.get("lora1_model_weight", 0.5)
+            lora_loader["strength_clip"] = params.get("lora1_clip_weight", 0.7)
         
+        return workflow
+    
+    def update_mask(self, workflow, mask_image_path):
+        """Update workflow with mask image if provided."""
+        if "2" in workflow and "inputs" in workflow["2"] and "mask" in workflow["2"]["inputs"]:
+            if mask_image_path:
+                
+                workflow["2"]["inputs"]["mask"] = mask_image_path
         return workflow
     
     def run_workflow(self, workflow, output_dir, run_id):
@@ -114,7 +153,9 @@ class WorkflowOptimizer:
         os.makedirs(output_dir, exist_ok=True)
         
         try:
-            res = requests.post(f"{COMFY_API}/prompt", json=workflow)
+            p = {"prompt": workflow}
+            data = json.dumps(p).encode('utf-8')
+            res = requests.post(f"{COMFY_API}/prompt", data = data)
             if res.status_code != 200:
                 print(f"Error: API returned status code {res.status_code}")
                 return []
@@ -134,6 +175,7 @@ class WorkflowOptimizer:
                 time.sleep(1)
                 res = requests.get(f"{COMFY_API}/history")
                 if res.status_code != 200:
+                    print(f"Error: Failed to get history, status code {res.status_code}")
                     continue
                     
                 history = res.json()
@@ -288,7 +330,7 @@ class WorkflowOptimizer:
         # List of tattoo style descriptors
         style_descriptors = [
             "realistic", "watercolor", "traditional", "japanese", "tribal",
-            "black and grey", "neo-traditional", "minimalist", "sketch", "dotwork",
+            "black and grey", "old looking tattoo", "minimalist", "sketch", "dotwork",
             "linework", "illustrative", "blackwork", "fine line", "surreal"
         ]
         
@@ -331,7 +373,7 @@ class WorkflowOptimizer:
         
         return params
     
-    def optimize(self, input_image_path, base_prompt, iterations=5, prompt_variations=3):
+    def optimize(self, input_image_path,mask_path, base_prompt, iterations=5, prompt_variations=3):
         """Run optimization process with multiple iterations."""
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         all_results = []
@@ -350,7 +392,7 @@ class WorkflowOptimizer:
                 
                 # Update workflow with params
                 workflow = self.load_workflow()
-                workflow = self.update_workflow_params(workflow, params, input_image_path, prompt)
+                workflow = self.update_workflow_params(workflow, params, input_image_path, prompt,mask_path)
                 
                 # Run workflow
                 run_id = f"{iteration}_{prompt_idx}"
@@ -385,90 +427,3 @@ class WorkflowOptimizer:
         # Sort results by score
         all_results.sort(key=lambda x: x["score"], reverse=True)
         return all_results
-
-# GUI for optimization
-def create_gui():
-    with gr.Blocks(theme=gr.themes.Soft()) as demo:
-        optimizer = WorkflowOptimizer()
-        
-        gr.Markdown("<h1 style='text-align: center; margin-bottom: 1rem'>Tattoo Workflow Optimizer</h1>")
-        
-        with gr.Row():
-            with gr.Column(scale=1):
-                input_image = gr.Image(type="filepath", label="Input Image")
-                
-                with gr.Group():
-                    base_prompt = gr.Textbox(label="Base Prompt", value=BASE_PROMPT)
-                    iterations = gr.Slider(1, 10, value=3, step=1, label="Iterations")
-                    prompt_variations = gr.Slider(1, 5, value=3, step=1, label="Prompt Variations")
-                
-                optimize_btn = gr.Button("Optimize Workflow", variant="primary")
-                
-            with gr.Column(scale=2):
-                with gr.Tabs():
-                    with gr.TabItem("Best Result"):
-                        best_image_display = gr.Image(label="Best Result")
-                        best_score = gr.Textbox(label="Score", interactive=False)
-                        best_prompt = gr.Textbox(label="Prompt", interactive=False)
-                        
-                        with gr.Accordion("Best Parameters", open=False):
-                            best_params = gr.JSON(label="Parameters")
-                    
-                    with gr.TabItem("All Results"):
-                        gallery = gr.Gallery(label="Results Gallery", columns=3, height=600)
-                        
-                    with gr.TabItem("History"):
-                        history_list = gr.Dataframe(
-                            headers=["Iteration", "Score", "Prompt"],
-                            label="Optimization History"
-                        )
-                    
-                    with gr.TabItem("Metrics"):
-                        metrics_display = gr.JSON(label="Image Metrics")
-        
-        def run_optimization(input_img, prompt, iters, variations):
-            if not input_img:
-                return None, "No input image selected", "", None, [], [], None
-                
-            results = optimizer.optimize(
-                input_img, 
-                prompt, 
-                iterations=int(iters), 
-                prompt_variations=int(variations)
-            )
-            
-            if not results:
-                return None, "No results generated", "", None, [], [], None
-            
-            # Format for gallery
-            gallery_images = [(r["image_path"], f"Score: {r['score']:.4f}") for r in results]
-            
-            # Format for history
-            history_data = []
-            for i, r in enumerate(optimizer.history):
-                history_data.append([i+1, f"{r['score']:.4f}", r['prompt']])
-            
-            # Get metrics for best result
-            best_metrics = results[0].get("metrics", {})
-            
-            return (
-                optimizer.best_image,
-                f"{optimizer.best_score:.4f}",
-                optimizer.best_params.get("prompt", ""),
-                optimizer.best_params,
-                gallery_images,
-                history_data,
-                best_metrics
-            )
-        
-        optimize_btn.click(
-            run_optimization,
-            inputs=[input_image, base_prompt, iterations, prompt_variations],
-            outputs=[best_image_display, best_score, best_prompt, best_params, gallery, history_list, metrics_display]
-        )
-    
-    return demo
-
-if __name__ == "__main__":
-    demo = create_gui()
-    demo.launch()
