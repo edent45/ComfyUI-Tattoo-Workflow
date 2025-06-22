@@ -34,7 +34,6 @@ DEFAULT_PARAMS = {
     "sampler": "dpmpp_2s_ancestral_cfg_pp",
     "scheduler": "karras",
     "steps": 70,
-    "cfg": 6.5,
     "denoise": 0.65
 }
 
@@ -58,9 +57,8 @@ class WorkflowOptimizer:
             "lora_weights": [0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             "samplers": ["dpmpp_2s_ancestral", "dpmpp_sde", "dpmpp_2m", "euler", "euler_ancestral"],
             "schedulers": ["karras", "exponential", "normal"],
-            "steps": [20, 30, 40, 50, 60, 70],
-            "cfg": [5.0, 6.0, 7.0, 8.0],
-            "denoise": [0.5, 0.6, 0.7, 0.8]
+            "steps": [ 40, 50, 60, 70],
+            "denoise": [0.55, 0.6, 0.65, 0.7]
         }
         
         # Track best parameters and their scores
@@ -117,7 +115,7 @@ class WorkflowOptimizer:
             ksampler = workflow["51"]["inputs"]
             ksampler["seed"] = random.randint(1, 10000000000000)
             ksampler["steps"] = params.get("steps", 70)
-            ksampler["cfg"] = params.get("cfg", 6.5)
+            ksampler["cfg"] = 6.5  # Default CFG value
             ksampler["sampler_name"] = params.get("sampler", "dpmpp_2s_ancestral_cfg_pp")
             ksampler["scheduler"] = params.get("scheduler", "karras")
             ksampler["denoise"] = params.get("denoise", 0.64)
@@ -224,9 +222,9 @@ class WorkflowOptimizer:
         # weights
         weights = {
             "clip": 0.7,
-            "brightness": 0.1,
-            "contrast": 0.1,
-            "sharpness": 0.1,
+            "brightness": 0.05,
+            "contrast": 0.05,
+            "sharpness": 0.05,
             "edge_quality": 0.1,
             "noise_level": 0.05
         }
@@ -340,7 +338,6 @@ class WorkflowOptimizer:
         
         # Random KSampler parameters
         params["steps"] = random.choice(self.param_ranges["steps"])
-        params["cfg"] = random.choice(self.param_ranges["cfg"])
         params["sampler"] = random.choice(self.param_ranges["samplers"])
         params["scheduler"] = random.choice(self.param_ranges["schedulers"])
         params["denoise"] = random.choice(self.param_ranges["denoise"])
@@ -359,6 +356,9 @@ class WorkflowOptimizer:
         """Run optimization process with multiple iterations."""
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         all_results = []
+        
+        if base_prompt is None or base_prompt.strip() == "":
+            raise ValueError("Base prompt cannot be empty")
         
         # Generate prompt variations
         prompts = self.generate_prompt_variations(base_prompt, prompt_variations)

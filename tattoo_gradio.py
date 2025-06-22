@@ -181,18 +181,20 @@ def create_gui():
             
             # input image column
             with gr.Column(scale=1):
-                # Input image upload
-                input_image = gr.Image(type="filepath", label="Upload Input Image",height=512, width=512,interactive=True)
-          
-                # Mask editor
-                mask_editor = gr.ImageMask(
-                    label="Draw mask (white areas = tattoo placement)",
-                    brush=gr.Brush(colors=["#ffffff"], color_mode="fixed"),
-                    height=512,
-                    width=512,
-                    image_mode="RGB"
-                )
-                
+                with gr.Tabs():
+                    with gr.Tab("input"):
+                        # Input image upload
+                        input_image = gr.Image(type="filepath", label="Upload Input Image",height=512, width=512,interactive=True)
+                    with gr.Tab("Mask Editor"):
+                        # Mask editor
+                        mask_editor = gr.ImageMask(
+                            label="Draw mask (white areas = tattoo placement)",
+                            brush=gr.Brush(colors=["#ffffff"], color_mode="fixed"),
+                            height=512,
+                            width=512,
+                            image_mode="RGB"
+                        )
+                    
                 # Automatically set mask editor background to input image
                 input_image.change(
                     fn=file_to_array,
