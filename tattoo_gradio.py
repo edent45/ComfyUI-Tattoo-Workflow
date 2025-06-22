@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import gradio as gr
 from tattoo_optimizer import WorkflowOptimizer, MASK_DIR, OUTPUT_DIR, BASE_PROMPT
+from check import run_workflow_once
 
 #------Functions for Gradio Interface------
 
@@ -87,8 +88,12 @@ def process_mask(mask_data):
 
         # Save the mask
         os.makedirs(MASK_DIR, exist_ok=True)
-        mask_path = os.path.join(MASK_DIR, f"accepted_mask_{int(time.time())}.png")
+        mask_path = os.path.join(MASK_DIR, f"accepted_mask_{int(time.time())}.png").replace("\\", "/")
         mask_img.save(mask_path)
+        
+        # Debugging: Check if the file exists
+        if not os.path.exists(mask_path):
+            return None, f"❌ Mask file not found after saving: {mask_path}"
 
         return mask_path, "✅ Mask accepted and saved! Ready for optimization."
 
@@ -106,7 +111,7 @@ def extract_input_image(mask_data):
         input_image = Image.fromarray(input_image_array).convert("RGB")
         
         # Save the input image to a temporary file
-        temp_image_path = os.path.join(OUTPUT_DIR, f"input_image_{int(time.time())}.png")
+        temp_image_path = os.path.join(OUTPUT_DIR, f"input_image_{int(time.time())}.png").replace("\\", "/")
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         input_image.save(temp_image_path)
         
@@ -115,6 +120,11 @@ def extract_input_image(mask_data):
         print(f"Error extracting input image: {e}")
         return None
 
+def file_to_array(img_path):
+    if img_path is None:
+        return None
+    img = Image.open(img_path).convert("RGB")
+    return np.array(img)
 
 def run_optimization(input_img, mask_path, prompt, iterations, variations):
     """Run the optimization process with the given parameters"""
@@ -127,11 +137,11 @@ def run_optimization(input_img, mask_path, prompt, iterations, variations):
     optimizer = WorkflowOptimizer()
     
     results = optimizer.optimize(
-        input_img, 
-        prompt, 
-        iterations=int(iterations), 
-        prompt_variations=int(variations),
-        mask_path=mask_path
+        input_img,
+        mask_path,
+        prompt,
+        int(iterations),
+        int(variations)
     )
     
     if not results:
@@ -168,12 +178,13 @@ def create_gui():
         gr.Markdown("<h1 style='text-align: center; margin-bottom: 1rem'>Tattoo Workflow Optimizer</h1>")
         
         with gr.Row():
+            
+            # input image column
             with gr.Column(scale=1):
                 # Input image upload
-                input_image = gr.Image(type="filepath", label="Upload Input Image")
-                
+                input_image = gr.Image(type="filepath", label="Upload Input Image",height=512, width=512,interactive=True)
+          
                 # Mask editor
-                gr.Markdown("### Draw mask where to place the tattoo (white areas)")
                 mask_editor = gr.ImageMask(
                     label="Draw mask (white areas = tattoo placement)",
                     brush=gr.Brush(colors=["#ffffff"], color_mode="fixed"),
@@ -182,8 +193,15 @@ def create_gui():
                     image_mode="RGB"
                 )
                 
+                # Automatically set mask editor background to input image
+                input_image.change(
+                    fn=file_to_array,
+                    inputs=[input_image],
+                    outputs=[mask_editor]
+                )
                 
-                
+                mask_editor.input = input_image  # Set the input image as the background for mask editor
+                                
                 # Mask controls
                 accept_mask_btn = gr.Button("Accept Mask", variant="primary")
                 mask_status = gr.Markdown("Draw your mask on the input image and click 'Accept Mask'.")
@@ -199,10 +217,13 @@ def create_gui():
                 # Run optimization button
                 optimize_btn = gr.Button("Optimize Workflow", variant="primary")
                 
+                # debug 
+                run_btn = gr.Button("Run Workflow Once", variant="secondary")
+                
             with gr.Column(scale=1): # Right column for results
                 with gr.Tabs():
                     with gr.TabItem("Best Result"):
-                        best_image_display = gr.Image(label="Best Result")
+                        best_image_display = gr.Image(label="Best Result", height=512, width=512)
                         best_score = gr.Textbox(label="Score", interactive=False)
                         best_prompt = gr.Textbox(label="Prompt", interactive=False)
                         
@@ -239,6 +260,13 @@ def create_gui():
         optimize_btn.click(
             fn=run_optimization,
             inputs=[input_image, mask_path_state, base_prompt, iterations, prompt_variations],
+            outputs=[best_image_display, best_score, best_prompt, best_params, gallery, history_list, metrics_display]
+        )
+        
+        #debug run workflow once
+        run_btn.click(
+            fn=run_workflow_once,
+            inputs=[input_image, mask_path_state, base_prompt],
             outputs=[best_image_display, best_score, best_prompt, best_params, gallery, history_list, metrics_display]
         )
     

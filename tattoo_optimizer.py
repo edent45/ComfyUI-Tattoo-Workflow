@@ -20,14 +20,15 @@ from transformers import CLIPProcessor, CLIPModel
 #------CONSTANTS------
 COMFY_API = "http://127.0.0.1:8000/"    #"http://127.0.0.1:8188"
 WORKFLOW_PATH = "./tattoo_crop_api.json"
-OUTPUT_DIR = "./output_images"
+COMFYUI_PROJECT_DIR = r"C:\Users\Admin\Desktop\Uni\Project\Tattoo Workflow\ComfyUI-Tattoo-Workflow"
+OUTPUT_DIR = r"C:\Users\Admin\Desktop\Uni\Project\Tattoo Workflow\ComfyUI-Tattoo-Workflow\Results" 
 LORA_DIR = r"C:\Users\Admin\Documents\ComfyUI\models\loras"  # Directory with tattoo LoRAs
 BASE_PROMPT = "flower tattoo"  # Default base prompt
-MASK_DIR = "./masks"  # Directory to save masks
+MASK_DIR = r"C:\Users\Admin\Desktop\Uni\Project\Tattoo Workflow\ComfyUI-Tattoo-Workflow\masks"  # Directory to save masks
 
 #------DEFAULT PARAMETERS------
 DEFAULT_PARAMS = {
-    "lora1": "sdxl tattoo\\real-02.safetensors",
+    "lora1": "sdxl tattoo\\SDXL-tattoo-Lora.safetensors",
     "lora1_model_weight": 0.5,
     "lora1_clip_weight": 0.7,
     "sampler": "dpmpp_2s_ancestral_cfg_pp",
@@ -36,6 +37,12 @@ DEFAULT_PARAMS = {
     "cfg": 6.5,
     "denoise": 0.65
 }
+
+LORAS = [
+    "sdxl tattoo\\real-02.safetensors",
+    "sdxl tattoo\\SDXL-tattoo-Lora.safetensors",
+    "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors",
+    "ginavalentina-01.safetensors"]
 
 #------CLIP INIT------
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -47,7 +54,7 @@ class WorkflowOptimizer:
     def __init__(self):
         # Default parameter ranges
         self.param_ranges = {
-            "loras": self.get_available_loras(),
+            "loras": LORAS,  # List of available LoRAs
             "lora_weights": [0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
             "samplers": ["dpmpp_2s_ancestral", "dpmpp_sde", "dpmpp_2m", "euler", "euler_ancestral"],
             "schedulers": ["karras", "exponential", "normal"],
@@ -69,15 +76,16 @@ class WorkflowOptimizer:
             return ["sdxl tattoo/real-02.safetensors", "sdxl tattoo/SDXL-tattoo-Lora.safetensors"]
         
         if model == "sdxl":
-            lora_dir = os.path.join(LORA_DIR, "sdxl tattoo")   
+            lora_dir = "sdxl tattoo"  # Default directory for SDXL LoRAs
         elif model == "sd":
-            lora_dir = os.path.join(LORA_DIR, "tattoo sd 1.5") 
+            lora_dir = "tattoo sd 1.5"
         
         loras = []
         
         for file in os.listdir(lora_dir):
             if file.endswith(".safetensors"):
-                loras.append(os.path.join(lora_dir, file))
+                loras.append(f"{lora_dir}\\{file}")  # This matches the format ComfyUI expects
+                #loras.append(os.path.join(lora_dir, file).replace("\\", "/"))  # Ensure correct path format
         if not loras:
             return ["sdxl tattoo/real-02.safetensors", "sdxl tattoo/SDXL-tattoo-Lora.safetensors"]
         return loras
@@ -94,27 +102,10 @@ class WorkflowOptimizer:
             workflow["1"]["inputs"]["image"] = input_image_path
         
         # set mask
-        if mask_path and os.path.exists(mask_path):
-            print(f"Using mask: {mask_path}")
-            
-            # Add LoadMaskImage node to workflow
-            workflow["80"] = {
-                "inputs": {
-                    "image_path": mask_path,  # Use image_path as defined in your INPUT_TYPES
-                    "invert": False,
-                    "threshold": 127.0
-                },
-                "class_type": "LoadMaskImage"  # Use your custom node
-            }
-            
-            
-            # Connect the mask to the CropByMask node
-            if "4" in workflow and "inputs" in workflow["4"]:
-                if "mask" not in workflow["4"]["inputs"]:
-                    workflow["4"]["inputs"]["mask"] = [
-                        "80",  # The mask loader node
-                        0     # The first output is the image
-                    ]
+        if "73" in workflow and "inputs" in workflow["73"]:
+            workflow["73"]["inputs"]["image_path"] = mask_path
+            workflow["73"]["inputs"]["invert"] = False  # Ensure mask is not inverted
+            workflow["73"]["inputs"]["threshold"] = 127  # Default threshold for binary mask
             
         
         # Set prompt
@@ -132,20 +123,11 @@ class WorkflowOptimizer:
             ksampler["denoise"] = params.get("denoise", 0.64)
         
         # Set LoRA parameters for LoraLoader (node 53)
-        if "53" in workflow and params.get("lora1"):
-            lora_loader = workflow["53"]["inputs"]
-            lora_loader["lora_name"] = params["lora1"]
-            lora_loader["strength_model"] = params.get("lora1_model_weight", 0.5)
-            lora_loader["strength_clip"] = params.get("lora1_clip_weight", 0.7)
+        if "53" in workflow :
+            workflow["53"]["inputs"]["lora_name"] = DEFAULT_PARAMS["lora1"]
+            workflow["53"]["inputs"]["strength_model"] = params.get("lora1_model_weight", 0.5)
+            workflow["53"]["inputs"]["strength_clip"] = params.get("lora1_clip_weight", 0.7)
         
-        return workflow
-    
-    def update_mask(self, workflow, mask_image_path):
-        """Update workflow with mask image if provided."""
-        if "2" in workflow and "inputs" in workflow["2"] and "mask" in workflow["2"]["inputs"]:
-            if mask_image_path:
-                
-                workflow["2"]["inputs"]["mask"] = mask_image_path
         return workflow
     
     def run_workflow(self, workflow, output_dir, run_id):
@@ -186,15 +168,15 @@ class WorkflowOptimizer:
                     if completed:
                         # Download output images
                         for node_id, node_output in outputs.items():
-                            if "images" in node_output:
+                            if "images" in node_output :
                                 for img in node_output["images"]:
                                     img_filename = img["filename"]
                                     img_subfolder = img.get("subfolder", "")
                                     
                                     # For node 71 (final result)
-                                    if node_id == "71":
+                                    if node_id == "74":
                                         img_data = requests.get(f"{COMFY_API}/view?filename={img_filename}&subfolder={img_subfolder}").content
-                                        output_path = os.path.join(output_dir, f"run_{run_id}_{img_filename}")
+                                        output_path = os.path.join(output_dir, f"run_{run_id}_{img_filename}").replace("\\","/")  # Ensure correct path format
                                         with open(output_path, "wb") as f:
                                             f.write(img_data)
                                         output_images.append(output_path)

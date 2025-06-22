@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "image": "clipspace/clipspace-mask-7231666.8000000715.png [input]"
+      "image": "clipspace/clipspace-mask-22431072.19999993.png [input]"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -41,8 +41,8 @@
         0
       ],
       "mask": [
-        "1",
-        1
+        "73",
+        0
       ]
     },
     "class_type": "CropByMask",
@@ -61,7 +61,7 @@
   },
   "6": {
     "inputs": {
-      "strength": 0.6600000000000001,
+      "strength": 0.7100000000000002,
       "start_percent": 0,
       "end_percent": 1,
       "positive": [
@@ -92,7 +92,7 @@
   },
   "7": {
     "inputs": {
-      "text": "A delicate and detailed flower tattoo featuring a mix of realistic roses, peonies, and lilies, arranged in a flowing composition along the arm. The design should include fine linework, subtle shading, and botanical elements like leaves, small buds, and vines. The style should be elegant and slightly ornamental, with a black and grey color palette (no color fill), giving it a timeless and classic look. Placement is forearm or upper arm. Optional: Add a soft watercolor background or geometric elements like thin mandala patterns to enhance the aesthetic",
+      "text": "A small crescent moon with delicate floral vines wrapping around it",
       "clip": [
         "53",
         1
@@ -144,7 +144,7 @@
   },
   "13": {
     "inputs": {
-      "grow_mask_by": 6,
+      "grow_mask_by": 8,
       "pixels": [
         "52",
         0
@@ -256,7 +256,7 @@
   },
   "51": {
     "inputs": {
-      "seed": 44160080562371,
+      "seed": 44160080561703,
       "steps": 70,
       "cfg": 6.5,
       "sampler_name": "dpmpp_2s_ancestral_cfg_pp",
@@ -304,7 +304,7 @@
   },
   "53": {
     "inputs": {
-      "lora_name": "sdxl tattoo\\real-02.safetensors",
+      "lora_name": "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors",
       "strength_model": 0.5100000000000001,
       "strength_clip": 0.7300000000000001,
       "model": [
@@ -362,19 +362,19 @@
       "clip_weight_3": 0.6600000000000001,
       "lora_4": false,
       "lora_name_4": "None",
-      "lora_weight_4": 1,
-      "model_weight_4": 1,
-      "clip_weight_4": 1,
+      "lora_weight_4": 1.0000000000000002,
+      "model_weight_4": 1.0000000000000002,
+      "clip_weight_4": 1.0000000000000002,
       "lora_5": false,
       "lora_name_5": "None",
-      "lora_weight_5": 1,
-      "model_weight_5": 1,
-      "clip_weight_5": 1,
+      "lora_weight_5": 1.0000000000000002,
+      "model_weight_5": 1.0000000000000002,
+      "clip_weight_5": 1.0000000000000002,
       "lora_6": false,
       "lora_name_6": "None",
-      "lora_weight_6": 1,
-      "model_weight_6": 1,
-      "clip_weight_6": 1,
+      "lora_weight_6": 1.0000000000000002,
+      "model_weight_6": 1.0000000000000002,
+      "clip_weight_6": 1.0000000000000002,
       "save_hash": false
     },
     "class_type": "CR LoRA Stack JK",
@@ -434,12 +434,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_pqjpo_00011_.png&type=temp&subfolder=&rand=0.8473401023691323"
+            "url": "/api/view?filename=rgthree.compare._temp_bluir_00099_.png&type=temp&subfolder=&rand=0.32144111386836616"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_pqjpo_00012_.png&type=temp&subfolder=&rand=0.22543033488724928"
+            "url": "/api/view?filename=rgthree.compare._temp_bluir_00100_.png&type=temp&subfolder=&rand=0.44193621150053963"
           }
         ]
       },
@@ -455,6 +455,42 @@
     "class_type": "Image Comparer (rgthree)",
     "_meta": {
       "title": "Image Comparer (rgthree)"
+    }
+  },
+  "73": {
+    "inputs": {
+      "image_path": "C:\\Users\\Admin\\Desktop\\Uni\\Project\\Tattoo Workflow\\ComfyUI-Tattoo-Workflow\\masks\\accepted_mask_1750536486.png",
+      "invert": false,
+      "threshold": 127
+    },
+    "class_type": "LoadMaskImage",
+    "_meta": {
+      "title": "Load Mask Image"
+    }
+  },
+  "74": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "71",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "75": {
+    "inputs": {
+      "mask": [
+        "73",
+        0
+      ]
+    },
+    "class_type": "MaskPreview+",
+    "_meta": {
+      "title": "🔧 Mask Preview"
     }
   }
 }
