@@ -242,7 +242,8 @@ class WorkflowOptimizer:
                 gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
                 
                 # clip similarity
-                inputs = clip_processor(text=[prompt], images=pil_img, return_tensors="pt", padding=True).to(device) # Process text and image inputs
+                improved_prompt  = "a person with a tattoo of " + prompt  # Adjust prompt for better CLIP results
+                inputs = clip_processor(text=[improved_prompt], images=pil_img, return_tensors="pt", padding=True).to(device) # Process text and image inputs
                 
                 with torch.no_grad(): 
                     outputs = clip_model(**inputs) # Get CLIP embeddings
