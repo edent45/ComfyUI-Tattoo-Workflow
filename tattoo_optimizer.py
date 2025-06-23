@@ -55,8 +55,8 @@ class WorkflowOptimizer:
         self.param_ranges = {
             "loras": LORAS,  # List of available LoRAs
             "lora_weights": [0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-            "samplers": ["dpmpp_2s_ancestral", "dpmpp_sde", "dpmpp_2m", "euler", "euler_ancestral"],
-            "schedulers": ["karras", "exponential", "normal"],
+            "samplers": ["dpmpp_2s_ancestral","ddpm" ,"dpmpp_2s_ancestral_cfg_pp"],
+            "schedulers": ["karras", "ddim_uniform", "beta"],
             "steps": [ 40, 50, 60, 70],
             "denoise": [0.55, 0.6, 0.65, 0.7]
         }
