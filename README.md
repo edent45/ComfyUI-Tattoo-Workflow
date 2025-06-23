@@ -36,8 +36,10 @@ The first major step was creating a detailed workflow that produces tattoos natu
     - Input : Image of a person 
     - The user draws a mask over the area where the tattoo should be placed. 
         <td><img src="images_readme/mask_example.png" width="200"/></td>
+    
     - The image is automatically cropped around the mask to focus on the region of interest, improving resolution and detail.
         <td><img src="images_readme/crop_example.png" width="200"/></td>
+    
     - Images are upscaled as needed to match model input requirement
     - Mask Node: when using the ComfyUI as backend i created a custom node to allow masks inputs from outside the ComfyUI editor.
 
@@ -167,9 +169,7 @@ To refine outputs and automate quality improvements, a Python-based optimizer wa
 
 ### Gradio User Interface
 
-<div align="center">
-  <img src="images_readme/gradio interface.png" width="500"/>
-</div>
+![Watch the demo](images_readme/mask_ui.mp4)
 
 A custom Gradio UI makes the workflow accessible and interactive:
 
