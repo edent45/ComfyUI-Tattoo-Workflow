@@ -166,6 +166,11 @@ To refine outputs and automate quality improvements, a Python-based optimizer wa
 
 
 ### Gradio User Interface
+
+<div align="center">
+  <img src="images_readme/gradio interface.png" width="500"/>
+</div>
+
 A custom Gradio UI makes the workflow accessible and interactive:
 
 - **Image Upload:**
@@ -181,7 +186,15 @@ A custom Gradio UI makes the workflow accessible and interactive:
 
 - The user-defined mask is processed from the Gradio interface.
 
+  <video width="500" controls>
+      <source src="images_readme/mask_ui.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+  </video>
+
+
 - The mask editor outputs the mask as image data, which is processed in Python. The system extracts the relevant mask layer, converts it to grayscale, and applies a binary threshold to create a clear, black-and-white mask. This ensures that only the selected area is targeted for tattoo generation.The saved mask is passed to the backend workflow (ComfyUI), where a custom ComfyUI node (load_mask.py) loads this mask and feeds it into the workflow.
+
+    <td><img src="images_readme/custom node mask.png" width="200"/></td>
 
 ### Optimization Loop
 
@@ -193,6 +206,21 @@ A custom Gradio UI makes the workflow accessible and interactive:
     - The tattoo is generated using the ComfyUI workflow, triggered via API.
 
     - The resulting image is saved and passed to the ranking function.
+
+### ComfyUI as Backend
+The API process serves as the bridge between the Gradio user interface and the ComfyUI backend, enabling automated, programmatic control over the tattoo generation workflow. Here’s how it works:
+- The Python optimizer constructs a workflow configuration (typically as a JSON object) that specifies:
+
+  - The input image and mask locations
+  - The prompt and any prompt variations
+  - Model and LoRA selections
+  - All other parameters needed for the workflow
+
+- This configuration is sent to the ComfyUI backend via an HTTP API request (in my case it is, http://127.0.0.1:8000/).
+
+- The ComfyUI backend receives the API request, loads the specified workflow, and executes the image generation process. This includes loading models, applying the mask, running inpainting, and generating the tattooed image.
+
+- Once the workflow completes, the backend saves the generated images to a specified output directory. The API responds with the paths to these output images.
 
 
 ### Image Ranking System
@@ -299,4 +327,6 @@ Each metric is weighted, and a final combined score is computed. The image with 
   By integrating a user-friendly Gradio interface, the project makes powerful generative tools accessible to non-technical users, designers, and artists alike.
 
   This work highlights the potential of combining deep learning, prompt engineering, and UI design to enhance creativity in digital art and design.
+
+## Results
 
