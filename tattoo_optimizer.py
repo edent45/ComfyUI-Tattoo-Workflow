@@ -16,6 +16,7 @@ from skimage import metrics, exposure, feature
 from PIL import Image
 import gradio as gr
 from transformers import CLIPProcessor, CLIPModel
+from collections import defaultdict
 
 #------CONSTANTS------
 COMFY_API = "http://127.0.0.1:8000/"    #"http://127.0.0.1:8188"
@@ -41,7 +42,9 @@ LORAS = [
     "sdxl tattoo\\real-02.safetensors",
     "sdxl tattoo\\SDXL-tattoo-Lora.safetensors",
     "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors",
-    "ginavalentina-01.safetensors"]
+    "ginavalentina-01.safetensors",
+    "sd tattoo 1.5\\sleeve_tattoo_v3.safetensors.safetensors",
+    "SDXL-Lightning\\sdxl_lightning_4step_lora.safetensors"]
 
 #------CLIP INIT------
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -60,6 +63,8 @@ class WorkflowOptimizer:
             "steps": [ 40, 50, 60, 70],
             "denoise": [0.55, 0.6, 0.65, 0.7]
         }
+        
+        self.param_usage = defaultdict(lambda: defaultdict(int))  # param_usage[param][value] = count
         
         # Track best parameters and their scores
         self.best_params = None
@@ -87,6 +92,7 @@ class WorkflowOptimizer:
         if not loras:
             return ["sdxl tattoo/real-02.safetensors", "sdxl tattoo/SDXL-tattoo-Lora.safetensors"]
         return loras
+    
     
     def load_workflow(self):
         """Load the workflow JSON."""
@@ -202,7 +208,8 @@ class WorkflowOptimizer:
                     outputs = clip_model(**inputs) # Get CLIP embeddings
                     text_emb = outputs.text_embeds # Get text embeddings
                     img_emb = outputs.image_embeds # Get image embeddings
-                    
+                    text_emb = torch.nn.functional.normalize(outputs.text_embeds, p=2, dim=-1)
+                    img_emb = torch.nn.functional.normalize(outputs.image_embeds, p=2, dim=-1)
                     # Cosine similarity
                     similarity = torch.nn.functional.cosine_similarity(text_emb, img_emb).item()
                     scores.append((img_path, similarity))
@@ -214,105 +221,156 @@ class WorkflowOptimizer:
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[0] if scores else (None, 0)
     
-    def rank_images(self, image_paths, prompt, target_brightness=0.5, style_reference=None):
-        """Rank images using multiple criteria including CLIP similarity, brightness, contrast, etc."""
+    @staticmethod
+    def crop_to_mask(image: Image.Image, mask_path: str, padding=10) -> Image.Image:
+        mask = Image.open(mask_path).convert("L")
+        mask_np = np.array(mask)
+        coords = np.argwhere(mask_np > 0)
+        if coords.size == 0:
+            return image  # fallback: no mask, return original
+        y0, x0 = coords.min(axis=0)
+        y1, x1 = coords.max(axis=0)
+        # Add padding and clip to image size
+        x0 = max(x0 - padding, 0)
+        y0 = max(y0 - padding, 0)
+        x1 = min(x1 + padding, image.width)
+        y1 = min(y1 + padding, image.height)
+        return image.crop((x0, y0, x1, y1))
+    
+    def mask_image(self, image, mask_path):
+        # Ensure image is RGB
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        mask = Image.open(mask_path).convert("L").resize(image.size)
+        img_np = np.array(image)
+        mask_np = np.array(mask)
+        img_np[mask_np < 128] = [127, 127, 127]
+        return Image.fromarray(img_np)
+    
+    
+    def rank_images(self, image_paths, mask_path, prompt, target_brightness=0.5):
+        """Rank images using improved heuristics and CLIP similarity."""
         if not image_paths:
-            return None, 0
-        
-        # weights
+            return None, 0, {}
+
+        # Adjusted weights
         weights = {
-            "clip": 0.7,
+            "clip": 0.5,
             "brightness": 0.05,
             "contrast": 0.05,
-            "sharpness": 0.05,
+            "sharpness": 0.15,
             "edge_quality": 0.1,
-            "noise_level": 0.05
+            "noise_level": 0.05,
+            "tattoo_presence": 0.1
         }
-    
+
         scores = []
+
         for img_path in image_paths:
-            # Load and process image
             try:
-                # Open image with PIL for CLIP
                 pil_img = Image.open(img_path).convert("RGB")
-                
-                #convert opencv image
-                cv_img = np.array(pil_img)
+                cropped_img = WorkflowOptimizer.crop_to_mask(pil_img, mask_path)
+                masked_img = self.mask_image(pil_img, mask_path)
+
+                # Resize masked_img to match cropped_img for fair comparison
+                masked_resized = masked_img.resize(cropped_img.size)
+                masked_gray = cv2.cvtColor(np.array(masked_resized), cv2.COLOR_RGB2GRAY)
+
+                cv_img = np.array(cropped_img)
                 cv_img = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
                 gray = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-                
-                # clip similarity
-                improved_prompt  = "a person with a tattoo of " + prompt  # Adjust prompt for better CLIP results
-                inputs = clip_processor(text=[improved_prompt], images=pil_img, return_tensors="pt", padding=True).to(device) # Process text and image inputs
-                
-                with torch.no_grad(): 
-                    outputs = clip_model(**inputs) # Get CLIP embeddings
-                    text_emb = outputs.text_embeds # Get text embeddings
-                    img_emb = outputs.image_embeds # Get image embeddings
-                    # Cosine similarity
-                    similarity = torch.nn.functional.cosine_similarity(text_emb, img_emb).item()
-                
-                # brightness
-                brightness = np.mean(gray) / 255.0  # Normalize to [0, 1]
-                brightness_score = 1.0 - abs(brightness - target_brightness)   #  # Higher when close to target
-                
-                # contrast
-                contrast = np.std(gray) / 255.0  # Normalize to [0, 1]
-                contrast_score = min(contrast * 2.5, 1.0)  # Scale to [0, 1]
-                
-                # sharpness
+
+                # ----- CLIP Similarity -----
+                improved_prompt = prompt + " on skin"
+                inputs_1 = clip_processor(text=[improved_prompt], images=cropped_img, return_tensors="pt", padding=True).to(device)
+                inputs_2 = clip_processor(text=[prompt], images=masked_resized, return_tensors="pt", padding=True).to(device)
+
+                similarities = []
+                for inputs in [inputs_1, inputs_2]:
+                    with torch.no_grad():
+                        outputs = clip_model(**inputs)
+                        text_emb = torch.nn.functional.normalize(outputs.text_embeds, p=2, dim=-1)
+                        img_emb = torch.nn.functional.normalize(outputs.image_embeds, p=2, dim=-1)
+                        sim = torch.nn.functional.cosine_similarity(text_emb, img_emb).item()
+                        similarities.append(sim)
+                similarity = max(similarities)
+                similarity_score = min(similarity * 1.5, 1.0)  # Boosted
+
+                # ----- Tattoo Presence (edge density in mask) -----
+                edges = feature.canny(gray, sigma=2)
+                tattoo_presence_mask = masked_gray > 64
+                tattoo_area = edges[tattoo_presence_mask]
+                if tattoo_area.size > 0:
+                    tattoo_presence = np.clip(np.mean(tattoo_area) * 10.0, 0.0, 1.0)
+                else:
+                    tattoo_presence = 0.1  # fallback small value
+
+                # ----- Brightness -----
+                brightness = np.mean(gray) / 255.0
+                brightness_score = 1.0 - abs(brightness - target_brightness)
+
+                # ----- Contrast -----
+                contrast = np.std(gray) / 255.0
+                contrast_score = min(contrast * 2.5, 1.0)
+
+                # ----- Sharpness -----
                 laplacian = cv2.Laplacian(gray, cv2.CV_64F)
                 sharpness = np.var(laplacian)
-                sharpness_score = min(sharpness / 500.0, 1.0)  # Normalize and cap
-                
-                #edge quality
-                edges = feature.canny(gray, sigma=2)
-                edge_quality = np.mean(edges) * 5.0  # Scale up edge detection result
-                edge_quality = min(edge_quality, 1.0)  # Cap at 1.0
-                
-                #noise level - low is better
+                sharpness_score = np.clip(sharpness / 300.0, 0.0, 1.0)
+
+                # ----- Edge Quality -----
+                edge_quality = np.clip(np.mean(edges) * 3.0, 0.0, 1.0)
+
+                # ----- Noise Level -----
                 blurred = cv2.GaussianBlur(gray, (11, 11), 0)
                 noise = np.mean(np.abs(gray.astype(np.float32) - blurred.astype(np.float32)))
-                noise_score = 1.0 - min(noise / 20.0, 1.0)  # Invert and normalize
-                
-                #weighted score
+                noise_score = 1.0 - min(noise / 20.0, 1.0)
+
+                # ----- Final Weighted Score -----
                 combined_score = (
-                    weights["clip"] * similarity +
+                    weights["clip"] * similarity_score +
                     weights["brightness"] * brightness_score +
                     weights["contrast"] * contrast_score +
                     weights["sharpness"] * sharpness_score +
                     weights["edge_quality"] * edge_quality +
-                    weights["noise_level"] * noise_score
+                    weights["noise_level"] * noise_score +
+                    weights["tattoo_presence"] * tattoo_presence
                 )
-                
-                #metrics 
+
+                # ----- Final Adjustment -----
+                combined_score = min(combined_score * 1.2 + 0.1, 1.0)  # Rescale
+
+                # ----- Debug print -----
+                print(f"[{img_path}] Score = {combined_score:.3f} | similarity={similarity_score:.3f} | sharpness={sharpness_score:.3f} | tattoo={tattoo_presence:.3f}")
+
                 metrics = {
-                    "similarity": similarity,
+                    "similarity": similarity_score,
                     "brightness": brightness_score,
                     "contrast": contrast_score,
                     "sharpness": sharpness_score,
                     "edge_quality": edge_quality,
                     "noise_level": noise_score,
+                    "tattoo_presence": tattoo_presence,
                     "combined_score": combined_score
                 }
-                
+
                 scores.append((img_path, combined_score, metrics))
-            
+
             except Exception as e:
                 print(f"Error loading image {img_path}: {e}")
                 scores.append((img_path, 0, {}))
-            
-        # Sort by combined score
+
         scores.sort(key=lambda x: x[1], reverse=True)
         return scores[0] if scores else (None, 0, {})
+    
     
     def generate_prompt_variations(self, base_prompt, n=3):
         """Generate variations of the base prompt."""
         # List of tattoo style descriptors
         style_descriptors = [
-            "realistic", "watercolor", "traditional", "japanese", "tribal",
-            "black and grey", "old looking tattoo", "minimalist", "sketch", "dotwork",
-            "linework", "illustrative", "blackwork", "fine line", "surreal"
+            "realistic", "watercolor", "traditional", "japanese",
+            "black and grey", "old looking tattoo", "minimalist", 
+            "linework", "illustrative", "fine line"
         ]
         
         # List of quality enhancers
@@ -337,11 +395,24 @@ class WorkflowOptimizer:
         """Generate random parameters for optimization."""
         params = {}
         
-        # Random KSampler parameters
-        params["steps"] = random.choice(self.param_ranges["steps"])
+        # When selecting a value:
+        for param, choices in self.param_ranges.items():
+            if param == "denoise":
+                continue  # Skip denoise for now, handled separately
+            available = [v for v in choices if self.param_usage[param][v] < 4]
+            if not available:
+                available = choices  # fallback if all are used up
+            value = random.choice(available)
+            params[param] = value
+            self.param_usage[param][value] += 1
+            
+        params["denoise"] = round(random.uniform(0.55, 0.7), 2)
+        
+        """# Random KSampler parameters
+        params["steps"] = random.choice(self.param_ranges["steps"]) 
         params["sampler"] = random.choice(self.param_ranges["samplers"])
         params["scheduler"] = random.choice(self.param_ranges["schedulers"])
-        params["denoise"] = random.choice(self.param_ranges["denoise"])
+        params["denoise"] = round(random.uniform(0.55, 0.7), 2)
         
         # Random LoRA parameters
         available_loras = self.param_ranges["loras"]
@@ -349,7 +420,7 @@ class WorkflowOptimizer:
             # LoraLoader parameters (for node 53)
             params["lora1"] = random.choice(available_loras)
             params["lora1_model_weight"] = random.choice(self.param_ranges["lora_weights"])
-            params["lora1_clip_weight"] = random.choice(self.param_ranges["lora_weights"])
+            params["lora1_clip_weight"] = random.choice(self.param_ranges["lora_weights"])"""
         
         return params
     
@@ -357,6 +428,7 @@ class WorkflowOptimizer:
         """Run optimization process with multiple iterations."""
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         all_results = []
+        bad_params = set()  # Store hashes of bad parameter sets
         
         if base_prompt is None or base_prompt.strip() == "":
             raise ValueError("Base prompt cannot be empty")
@@ -365,12 +437,22 @@ class WorkflowOptimizer:
         prompts = self.generate_prompt_variations(base_prompt, prompt_variations)
         
         for iteration in range(iterations):
+            score_threshold = 0.2 if iteration == 0 else 0.4  # Adjust threshold based on iteration
             for prompt_idx, prompt in enumerate(prompts):
                 print(f"Iteration {iteration+1}/{iterations}, Prompt {prompt_idx+1}/{len(prompts)}")
                 print(f"Prompt: {prompt}")
                 
-                # Generate random parameters
-                params = self.generate_random_params()
+                # Use default params for the first run, random for others
+                if iteration == 0 and prompt_idx == 0:
+                    params = DEFAULT_PARAMS.copy()
+                else:
+                    # Try up to 10 times to get a "new" parameter set
+                    for _ in range(10):
+                        params = self.generate_random_params()
+                        params_hash = str(sorted(params.items()))
+                        if params_hash not in bad_params:
+                            break
+
                 print(f"Parameters: {params}")
                 
                 # Update workflow with params
@@ -383,7 +465,7 @@ class WorkflowOptimizer:
                 
                 if output_images:
                     # Rank by CLIP and other metrics
-                    best_img_path, score, metrics = self.rank_images(output_images, prompt)
+                    best_img_path, score, metrics = self.rank_images(output_images,mask_path, prompt)
                     
                     if best_img_path:
                         result = {
@@ -406,6 +488,15 @@ class WorkflowOptimizer:
                         
                         # Add to history
                         self.history.append(result)
+                        
+                        if score < score_threshold:
+                            # Mark these params as "bad"
+                            if not (params.get("sampler") == "ddpm" or abs(params.get("denoise", 0) - 0.65) < 1e-6):
+                                params_hash = str(sorted(params.items()))
+                                bad_params.add(params_hash)
+                                print(f"Low score ({score:.4f}), will not reuse these parameters.")
+                            else:
+                                print(f"Low score ({score:.4f}), but keeping parameters due to exception (sampler=ddpm or denoise=0.65).")
         
         # Sort results by score
         all_results.sort(key=lambda x: x["score"], reverse=True)

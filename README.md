@@ -35,10 +35,12 @@ The first major step was creating a detailed workflow that produces tattoos natu
 
     - Input : Image of a person 
     - The user draws a mask over the area where the tattoo should be placed. 
-        <td><img src="images_readme/mask_example.png" width="200"/></td>
+
+      <td><img src="images_readme/mask_example.png" width="200"/></td>
     
     - The image is automatically cropped around the mask to focus on the region of interest, improving resolution and detail.
-        <td><img src="images_readme/crop_example.png" width="200"/></td>
+
+      <td><img src="images_readme/crop_example.png" width="200"/></td>
     
     - Images are upscaled as needed to match model input requirement
     - Mask Node: when using the ComfyUI as backend i created a custom node to allow masks inputs from outside the ComfyUI editor.
@@ -162,14 +164,12 @@ To refine outputs and automate quality improvements, a Python-based optimizer wa
     Multiple prompt variations are generated to explore stylistic diversity.
  - **Scoring and Selection:**
     Each generated image is evaluated using a combination of metrics:
-    - CLIP Similarity: Measures how well the generated tattoo matches the prompt, with the prompt phrased as “a person with a tattoo of [design] on the [body part]” for better alignment.
+    - CLIP Similarity: Measures how well the generated tattoo matches the prompt, with the prompt phrased as “a person with a tattoo of [design] ” for better alignment and the orignal prompt is mesured as well.
     - Image Quality Metrics: Brightness, contrast, sharpness, edge quality, and noise level are considered, with weights adjusted to focus on the tattoo region.
     - Weighting Strategy: Weights are adjusted to focus on the tattoo region and visual clarity, with semantic similarity prioritized.
 
 
 ### Gradio User Interface
-
-![Watch the demo](images_readme/mask_ui.mp4)
 
 A custom Gradio UI makes the workflow accessible and interactive:
 
@@ -186,19 +186,13 @@ A custom Gradio UI makes the workflow accessible and interactive:
 
 - The user-defined mask is processed from the Gradio interface.
 
-  <video width="500" controls>
-      <source src="images_readme/mask_ui.mp4" type="video/mp4">
-      Your browser does not support the video tag.
-  </video>
-
-
 - The mask editor outputs the mask as image data, which is processed in Python. The system extracts the relevant mask layer, converts it to grayscale, and applies a binary threshold to create a clear, black-and-white mask. This ensures that only the selected area is targeted for tattoo generation.The saved mask is passed to the backend workflow (ComfyUI), where a custom ComfyUI node (load_mask.py) loads this mask and feeds it into the workflow.
 
     <td><img src="images_readme/custom node mask.png" width="200"/></td>
 
 ### Optimization Loop
 
-- The optimization loop runs for the number of iterations specified by the user.
+- The optimization loop runs for the number of iterations and the number of prompt variations specified by the user.
 - In each iteration:
 
     - A new parameter configuration (including LoRA models and weights, denoise levels, etc.) is sampled.
@@ -206,6 +200,14 @@ A custom Gradio UI makes the workflow accessible and interactive:
     - The tattoo is generated using the ComfyUI workflow, triggered via API.
 
     - The resulting image is saved and passed to the ranking function.
+
+    - The parameters are randomly chosen for every iteration except the first one. 
+
+    - If the resulting image recive a low score, the corresponding set of parameters is saved and excluded from future sampling to   avoid repeating ineffective configurations.
+
+    - If a specific parameter value has been randomly selected twice, it is removed from the pool for subsequent iterations to encourage diversity in the optimization process.
+
+      ![Watch the demo](images_readme/mask_ui.gif)
 
 ### ComfyUI as Backend
 The API process serves as the bridge between the Gradio user interface and the ComfyUI backend, enabling automated, programmatic control over the tattoo generation workflow. Here’s how it works:
@@ -242,26 +244,34 @@ The method rank_images() accepts a list of image paths and evaluates each image 
 
     Noise Level
 
+    Tattoo Presence
+
 Each metric is weighted, and a final combined score is computed. The image with the highest score is selected as the best candidate.
-1. CLIP Similarity (Weight: 0.7)
+1. CLIP Similarity (Weight: 0.5)
 
     CLIP (Contrastive Language–Image Pretraining) is used to measure how well the generated tattoo image semantically aligns with the user’s textual prompt.
+    
+    We measure the CLIP score twice for each image: once using the original prompt with a masked version of the image (where only the tattoo area is visible), and once using an improved prompt with a cropped image focused on the tattoo region.
 
-    The prompt is rephrased to improve matching:
-    "a person with a tattoo of [user prompt]"
+    The improved prompt is rephrased as:
+    "[user prompt] on skin"
     This helps CLIP understand the context (a person + a tattoo) better than using only the raw prompt.
+
+    For the orignal prompt, the image is masked in a way that leave only the tattoo area visible, thus guiding CLIP to focus on the tattoo itself.
+
+    - Both scores are calculated and then the maximum is chosen as the final score.
 
     - Both the text and image are embedded using a pre-trained CLIP model.
 
     - Cosine similarity is calculated between the image and text embeddings.
 
-    This is the most heavily weighted factor (70%) because it's the best way to ensure the tattoo generated actually reflects the desired concept or style.
+    This is the most heavily weighted factor (50%) because it's the best way to ensure the tattoo generated actually reflects the desired concept or style.
 
 2. Brightness (Weight: 0.05)
 
     The mean pixel intensity is calculated from a grayscale version of the image.
 
-    - A target brightness value (default: 0.5) is used as a reference.
+    - A target brightness value (default: 0.05) is used as a reference.
 
     - The score is higher when the image brightness is close to this target.
 
@@ -275,7 +285,7 @@ Each metric is weighted, and a final combined score is computed. The image with 
 
     A well-contrasted tattoo is more visible and has better definition. Low-contrast images often look flat or blurry.
 
-4. Sharpness (Weight: 0.05)
+4. Sharpness (Weight: 0.15)
 
     Estimated using the variance of the Laplacian (a standard method to detect blur).
 
@@ -300,6 +310,10 @@ Each metric is weighted, and a final combined score is computed. The image with 
     - The score is inverted: lower noise = higher score.
 
     This helps eliminate grainy, artifact-heavy outputs that can occur in inpainting.
+
+7. Tattoo Presence (Weight: 0.1)
+
+    Measures edge density within the masked (tattoo) region to ensure the tattoo is visible and well-defined.
 
 #### Output and Behavior
 
