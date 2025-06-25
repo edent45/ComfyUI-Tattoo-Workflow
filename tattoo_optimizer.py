@@ -29,9 +29,9 @@ MASK_DIR = r"C:\Users\Admin\Desktop\Uni\Project\Tattoo Workflow\ComfyUI-Tattoo-W
 
 #------DEFAULT PARAMETERS------
 DEFAULT_PARAMS = {
-    "lora1": "sdxl tattoo\\SDXL-tattoo-Lora.safetensors",
-    "lora1_model_weight": 0.5,
-    "lora1_clip_weight": 0.7,
+    "lora1": "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors",
+    "lora1_model_weight": 0.7,
+    "lora1_clip_weight": 0.85,
     "sampler": "dpmpp_2s_ancestral_cfg_pp",
     "scheduler": "karras",
     "steps": 70,
@@ -43,8 +43,20 @@ LORAS = [
     "sdxl tattoo\\SDXL-tattoo-Lora.safetensors",
     "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors",
     "ginavalentina-01.safetensors",
-    "sd tattoo 1.5\\sleeve_tattoo_v3.safetensors.safetensors",
-    "SDXL-Lightning\\sdxl_lightning_4step_lora.safetensors"]
+    "sd tattoo 1.5\\sleeve_tattoo_v3.safetensors.safetensors"]
+
+SAMPLER_SCHEDULER_PAIRS = [
+    ("dpmpp_2s_ancestral_cfg_pp", "karras"),
+    ("dpmpp_2s_ancestral_cfg_pp", "ddim_uniform"),
+    ("dpmpp_2s_ancestral_cfg_pp", "beta"),
+    ("ddpm", "karras"),
+    ("ddpm", "exponential"),
+    ("ddpm", "ddim_uniform"),
+    ("ddpm", "beta"),
+    ("dpmpp_2s_ancestral", "beta"),
+    ("dpmpp_2s_ancestral", "karras"),
+    ("dpmpp_2s_ancestral", "exponential"),
+]
 
 #------CLIP INIT------
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -57,10 +69,11 @@ class WorkflowOptimizer:
         # Default parameter ranges
         self.param_ranges = {
             "loras": LORAS,  # List of available LoRAs
-            "lora_weights": [0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-            "samplers": ["dpmpp_2s_ancestral","ddpm" ,"dpmpp_2s_ancestral_cfg_pp"],
-            "schedulers": ["karras", "ddim_uniform", "beta"],
-            "steps": [ 40, 50, 60, 70],
+            "lora_weights": [0.6, 0.65, 0.7, 0.75, 0.8, 0.85],
+            "sampler_scheduler_pairs": SAMPLER_SCHEDULER_PAIRS , 
+            #"samplers": ["dpmpp_2s_ancestral","ddpm" ,"dpmpp_2s_ancestral_cfg_pp"],
+            #"schedulers": ["karras", "ddim_uniform", "beta"],
+            "steps": [ 50, 60, 70, 80],
             "denoise": [0.55, 0.6, 0.65, 0.7]
         }
         
@@ -119,7 +132,7 @@ class WorkflowOptimizer:
         # Set KSampler parameters
         if "51" in workflow:
             ksampler = workflow["51"]["inputs"]
-            ksampler["seed"] = random.randint(1, 10000000000000)
+            ksampler["seed"] = random.randint(0, 1125899906842624)
             ksampler["steps"] = params.get("steps", 70)
             ksampler["cfg"] = 6.5  # Default CFG value
             ksampler["sampler_name"] = params.get("sampler", "dpmpp_2s_ancestral_cfg_pp")
@@ -368,16 +381,16 @@ class WorkflowOptimizer:
         """Generate variations of the base prompt."""
         # List of tattoo style descriptors
         style_descriptors = [
-            "realistic", "watercolor", "traditional", "japanese",
+            "traditional", "japanese", "floral", "futuristic", "modern", 
             "black and grey", "old looking tattoo", "minimalist", 
-            "linework", "illustrative", "fine line"
+            "linework", "illustrative", "fine line", "colorful","magical"
         ]
         
         # List of quality enhancers
         quality_enhancers = [
             "detailed", "high contrast", "intricate", "elegant", "flowing",
             "beautiful", "artistic", "professional", "masterpiece", "high quality",
-            "balanced composition", "photorealistic", "award winning", "sharp details"
+            "balanced composition", "award winning", "sharp details"
         ]
         
         variations = [base_prompt]  # Include original
@@ -397,16 +410,29 @@ class WorkflowOptimizer:
         
         # When selecting a value:
         for param, choices in self.param_ranges.items():
-            if param == "denoise":
+            if param == "denoise" or param == "sampler_scheduler_pairs" :
                 continue  # Skip denoise for now, handled separately
-            available = [v for v in choices if self.param_usage[param][v] < 4]
+            available = [v for v in choices if self.param_usage[param][v] < 2]
             if not available:
                 available = choices  # fallback if all are used up
             value = random.choice(available)
             params[param] = value
             self.param_usage[param][value] += 1
             
-        params["denoise"] = round(random.uniform(0.55, 0.7), 2)
+        params["denoise"] = round(random.uniform(0.6, 0.7), 2)
+        while self.param_usage["denoise"][params["denoise"]] >= 2: 
+            params["denoise"] = round(random.uniform(0.6, 0.7), 2)
+        self.param_usage["denoise"][params["denoise"]] += 1
+        
+        # Sampler/Scheduler pair
+        pairs = self.param_ranges["sampler_scheduler_pairs"]
+        available_pairs = [p for p in pairs if self.param_usage["sampler_scheduler_pairs"][p] < 2]
+        if not available_pairs:
+            available_pairs = pairs
+        sampler, scheduler = random.choice(available_pairs)
+        params["sampler"] = sampler
+        params["scheduler"] = scheduler
+        self.param_usage["sampler_scheduler_pairs"][(sampler, scheduler)] += 1
         
         """# Random KSampler parameters
         params["steps"] = random.choice(self.param_ranges["steps"]) 
@@ -437,6 +463,7 @@ class WorkflowOptimizer:
         prompts = self.generate_prompt_variations(base_prompt, prompt_variations)
         
         for iteration in range(iterations):
+            
             score_threshold = 0.2 if iteration == 0 else 0.4  # Adjust threshold based on iteration
             for prompt_idx, prompt in enumerate(prompts):
                 print(f"Iteration {iteration+1}/{iterations}, Prompt {prompt_idx+1}/{len(prompts)}")
@@ -445,6 +472,20 @@ class WorkflowOptimizer:
                 # Use default params for the first run, random for others
                 if iteration == 0 and prompt_idx == 0:
                     params = DEFAULT_PARAMS.copy()
+                elif random.random() < 0.5: # 50% chance to use best parameters
+                    # use best parameters if available
+                    if self.best_params:
+                        print("Using best parameters from previous iteration.")
+                        params = self.best_params.copy()
+                        if random.random() < 0.3: # 30% chance to modify params 
+                            print("Modifying best parameters slightly.")
+                            # Change sampler or scheduler to a new random pair
+                            current_pair = (params.get("sampler"), params.get("scheduler"))
+                            possible_pairs = [p for p in self.param_ranges["sampler_scheduler_pairs"] if p != current_pair]
+                            if possible_pairs:
+                                sampler, scheduler = random.choice(possible_pairs)
+                                params["sampler"] = sampler
+                                params["scheduler"] = scheduler
                 else:
                     # Try up to 10 times to get a "new" parameter set
                     for _ in range(10):
@@ -488,15 +529,21 @@ class WorkflowOptimizer:
                         
                         # Add to history
                         self.history.append(result)
+                    
+                    if iteration == 0:
+                        worst_score = score # Use first iteration score as worst for thresholding
+                    if iteration > 0 and score < worst_score:
+                        worst_score = score # Update worst score if current is lower
+                        score_threshold = max(score_threshold, worst_score) # Adjust threshold based on worst score from first iteration
                         
-                        if score < score_threshold:
-                            # Mark these params as "bad"
-                            if not (params.get("sampler") == "ddpm" or abs(params.get("denoise", 0) - 0.65) < 1e-6):
-                                params_hash = str(sorted(params.items()))
-                                bad_params.add(params_hash)
-                                print(f"Low score ({score:.4f}), will not reuse these parameters.")
-                            else:
-                                print(f"Low score ({score:.4f}), but keeping parameters due to exception (sampler=ddpm or denoise=0.65).")
+                    if score < score_threshold:
+                        # Mark these params as "bad"
+                        if not (params.get("sampler") == "dpmpp_2s_ancestral_cfg_pp"):
+                            params_hash = str(sorted(params.items()))
+                            bad_params.add(params_hash)
+                            print(f"Low score ({score:.4f}), will not reuse these parameters.")
+                        else:
+                            print(f"Low score ({score:.4f}), but keeping parameters due to exception (sampler=ddpm .")
         
         # Sort results by score
         all_results.sort(key=lambda x: x["score"], reverse=True)
