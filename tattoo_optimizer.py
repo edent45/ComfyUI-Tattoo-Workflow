@@ -388,9 +388,9 @@ class WorkflowOptimizer:
         
         # List of quality enhancers
         quality_enhancers = [
-            "detailed", "high contrast", "intricate", "elegant", "flowing",
+            "detailed", "high contrast", "intricate", "elegant",
             "beautiful", "artistic", "professional", "masterpiece", "high quality",
-            "balanced composition", "award winning", "sharp details"
+            "award winning", "sharp details"
         ]
         
         variations = [base_prompt]  # Include original
