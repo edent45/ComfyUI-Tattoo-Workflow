@@ -192,20 +192,38 @@ A custom Gradio UI makes the workflow accessible and interactive:
 
 ### Optimization Loop
 
+The optimization process iteratively explores various prompt and parameter combinations to discover configurations that yield high-quality tattoo images.
+
 - The optimization loop runs for the number of iterations and the number of prompt variations specified by the user.
 - In each iteration:
+    
+    - Prompt Generation: A variation of the base prompt is selected or generated using style and quality descriptors to enhance diversity.
 
-    - A new parameter configuration (including LoRA models and weights, denoise levels, etc.) is sampled.
+    - Parameter Selection:
+        - First run uses the default parameters
+        
+        - In subsequent iterations:
 
-    - The tattoo is generated using the ComfyUI workflow, triggered via API.
+            - There is 50% chance to reuse the best performing parameters recoreded so far 
 
-    - The resulting image is saved and passed to the ranking function.
+              - with 30% chance the reused configuration is slightly altered by changing the sampler and scheduler.
+              
+              - with 40% chance the reused configuration is altered by changing the lora model.
 
-    - The parameters are randomly chosen for every iteration except the first one. 
+            - Otherwise, a new parameter configuration is randomly sampled.
 
-    - If the resulting image recive a low score, the corresponding set of parameters is saved and excluded from future sampling to   avoid repeating ineffective configurations.
+            - Parameter values that have already been used twice are excluded from the random selection pool to promote exploration.
 
-    - If a specific parameter value has been randomly selected twice, it is removed from the pool for subsequent iterations to encourage diversity in the optimization process.
+            - The resulting image is evaluated  using the ranking image function. 
+
+            - If the score of an image falls below a the threshold (which changes according to the worst score so far), the parametrs set is labeled as "bad" and is excluded from the selection process. 
+
+            - Only the default parameters set is excluded from being labeled "bad". 
+
+            - The best-scoring image and parameters are retained for potential reuse in future iterations.
+
+        - Over time, this adaptive process filters out underperforming configurations and concentrates sampling on promising regions of the parameter space, while still maintaining diversity through controlled randomness.
+
 
       ![Watch the demo](images_readme/mask_ui.gif)
 
@@ -344,3 +362,73 @@ Each metric is weighted, and a final combined score is computed. The image with 
 
 ## Results
 
+      
+  <td><img src="images_readme/optimization_example_1.png" width="800"/></td>
+
+  <td><img src="images_readme/optimization_example_2.png" width="800"/></td>
+
+
+  <td><img src="images_readme/optimization_example_3.png" width="800"/></td>
+
+  <td><img src="images_readme/optimization_example_4.png" width="800"/></td>
+
+
+  <td><img src="images_readme/optimization_example_5.png" width="800"/></td>
+  <td><img src="images_readme/optimization_example_6.png" width="800"/></td>
+
+  <td><img src="images_readme/optimization_example_7.png" width="800"/></td>
+
+
+### side by side compersion 
+
+<div align="center">
+
+<table>
+  <tr>
+    <td><img src="Input_Images/20.jpg" width="200"/></td>
+    <td><img src="Results/run_2_0_ComfyUI_00419_.png" width="200"/></td>
+  </tr>
+</table>
+
+
+<table>
+  <tr>
+    <td><img src="Results/run_1_2_ComfyUI_00382_.png" width="200"/></td>
+    <td><img src="Input_Images/16.jpg" width="200"/></td>
+    <td><img src="Results/run_2_1_ComfyUI_00384_.png" width="200"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="Results/run_1_0_ComfyUI_00272_.png" width="200"/></td>
+    <td><img src="Input_Images/3.jpg" width="200"/></td>
+    <td><img src="Results/run_1_1_ComfyUI_00273_.png" width="200"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="Input_Images/17.jpg" width="200"/></td>
+    <td><img src="Results/run_0_1_ComfyUI_00522_.png" width="200"/></td>
+  </tr>
+</table>
+
+
+<table>
+  <tr>
+    <td><img src="Input_Images/19.jpg" width="200"/></td>
+    <td><img src="Results/run_0_0_ComfyUI_00571_.png" width="200"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="Results/run_1_2_ComfyUI_00445_.png" width="300"/></td>
+    <td><img src="Input_Images/22.jpg" width="300"/></td>
+    <td><img src="Results/run_1_0_ComfyUI_00443_.png" width="300"/></td>
+  </tr>
+</table>
+
+
+</div>
