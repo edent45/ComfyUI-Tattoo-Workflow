@@ -141,7 +141,7 @@ class WorkflowOptimizer:
         
         # Set LoRA parameters for LoraLoader (node 53)
         if "53" in workflow :
-            workflow["53"]["inputs"]["lora_name"] = DEFAULT_PARAMS["lora1"]
+            workflow["53"]["inputs"]["lora_name"] = params.get("lora1", "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors")
             workflow["53"]["inputs"]["strength_model"] = params.get("lora1_model_weight", 0.5)
             workflow["53"]["inputs"]["strength_clip"] = params.get("lora1_clip_weight", 0.7)
         
@@ -408,6 +408,7 @@ class WorkflowOptimizer:
         """Generate random parameters for optimization."""
         params = {}
         
+        
         # When selecting a value:
         for param, choices in self.param_ranges.items():
             if param == "denoise" or param == "sampler_scheduler_pairs" :
@@ -416,8 +417,13 @@ class WorkflowOptimizer:
             if not available:
                 available = choices  # fallback if all are used up
             value = random.choice(available)
-            params[param] = value
-            self.param_usage[param][value] += 1
+            if param == "loras":
+                params["lora1"] = value  # Use only one LoRA for now
+                self.param_usage["lora1"][value] += 1
+                self.param_usage[param][value] += 1
+            else:
+                params[param] = value
+                self.param_usage[param][value] += 1
             
         params["denoise"] = round(random.uniform(0.6, 0.7), 2)
         while self.param_usage["denoise"][params["denoise"]] >= 2: 
@@ -486,6 +492,14 @@ class WorkflowOptimizer:
                                 sampler, scheduler = random.choice(possible_pairs)
                                 params["sampler"] = sampler
                                 params["scheduler"] = scheduler
+                                self.param_usage["sampler_scheduler_pairs"][(sampler, scheduler)] += 1
+                        if random.random() < 0.4: # 40% chance to modify LoRA
+                            print("Modifying LoRA parameters slightly.")
+                            params["lora1"] = random.choice(self.param_ranges["loras"])
+                            params["lora1_model_weight"] = random.choice(self.param_ranges["lora_weights"])
+                            params["lora1_clip_weight"] = random.choice(self.param_ranges["lora_weights"])
+                            self.param_usage["loras"][params["lora1"]] += 1
+                            
                 else:
                     # Try up to 10 times to get a "new" parameter set
                     for _ in range(10):
@@ -493,7 +507,16 @@ class WorkflowOptimizer:
                         params_hash = str(sorted(params.items()))
                         if params_hash not in bad_params:
                             break
-
+                
+                
+                
+                # lora handling
+                if params.get("lora1") == "sdxl tattoo\\TheAlly_Tattoo_Helper..safetensors":
+                    # Add CHANNEL_42 to prompt if using TheAlly_Tattoo_Helper LoRA
+                    prompt = prompt + ", CHANNEL_42 "
+            
+                
+                
                 print(f"Parameters: {params}")
                 
                 # Update workflow with params
