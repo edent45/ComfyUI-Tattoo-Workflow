@@ -265,13 +265,13 @@ def create_gui():
             outputs=[best_image_display, best_score, best_prompt, best_params, gallery, history_list, metrics_display]
         )
         
-        #debug run workflow once
+        """#debug run workflow once
         run_btn.click(
             fn=run_workflow_once,
             inputs=[input_image, mask_path_state, base_prompt],
             outputs=[best_image_display, best_score, best_prompt, best_params, gallery, history_list, metrics_display]
         )
-    
+        """
     return demo
 
 if __name__ == "__main__":
