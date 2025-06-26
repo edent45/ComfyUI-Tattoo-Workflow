@@ -220,7 +220,7 @@ def create_gui():
                 optimize_btn = gr.Button("Optimize Workflow", variant="primary")
                 
                 # debug 
-                run_btn = gr.Button("Run Workflow Once", variant="secondary")
+                #run_btn = gr.Button("Run Workflow Once", variant="secondary")
                 
             with gr.Column(scale=1): # Right column for results
                 with gr.Tabs():
