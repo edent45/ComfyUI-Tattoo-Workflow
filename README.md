@@ -171,6 +171,9 @@ To refine outputs and automate quality improvements, a Python-based optimizer wa
 
 ### Gradio User Interface
 
+<td><img src="images_readme/gradio interface .png" width="600"/></td>
+
+
 A custom Gradio UI makes the workflow accessible and interactive:
 
 - **Image Upload:**
@@ -379,7 +382,7 @@ Each metric is weighted, and a final combined score is computed. The image with 
   <td><img src="images_readme/optimization_example_7.png" width="800"/></td>
 
 
-### side by side compersion 
+### Side by Side Compersion 
 
 <div align="center">
 
@@ -427,6 +430,21 @@ Each metric is weighted, and a final combined score is computed. The image with 
     <td><img src="Results/run_1_2_ComfyUI_00445_.png" width="300"/></td>
     <td><img src="Input_Images/22.jpg" width="300"/></td>
     <td><img src="Results/run_1_0_ComfyUI_00443_.png" width="300"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="Results/run_2_1_ComfyUI_00687_.png" width="200"/></td>
+    <td><img src="Input_Images/10.jpg" width="200"/></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td><img src="Results/run_2_2_ComfyUI_00606_.png" width="200"/></td>
+    <td><img src="Input_Images/17.jpg" width="200"/></td>
+    <td><img src="Results/run_0_0_ComfyUI_00598_.png" width="200"/></td>
   </tr>
 </table>
 
